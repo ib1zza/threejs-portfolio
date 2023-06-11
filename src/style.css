@@ -1,0 +1,138 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap');
+
+*
+{
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body
+{
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.webgl
+{
+    position: fixed;
+    top: 0;
+    left: 0;
+    outline: none;
+}
+
+button {
+    display: block;
+    cursor: pointer;
+    z-index: 10;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 100px;
+    font-weight: 600;
+    padding: 20px;
+    background-color: transparent;
+    border: none;
+    color: transparent;
+    transition: all 0.2s ease-in-out;
+}
+
+
+.button__invisible {
+    opacity: 0;
+    color: transparent;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    /* top: calc(50% - 80px); */
+}
+
+.xmark {
+    position: absolute;
+    top: 50px;
+    opacity: 1;
+    pointer-events: all;
+    color: #fff;
+}
+
+.button svg {
+    height: 40px;
+    transition: all 0.5s ease-in-out;
+ 
+}
+
+.icon_invisible {
+    
+    opacity: 0;
+    transform: rotate(-0.5turn);
+}
+
+.icon_visible {
+   
+    opacity: 1;
+    transform: rotate(0turn);
+}
+
+.xmark:hover .icon_visible {
+    transform:  rotate(0.5turn);
+}
+
+/* ! */
+
+.main {
+    position: absolute;
+   
+   padding: 20px;
+   max-width: 600px;
+    z-index: 10;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 20px;
+    font-weight: 400;
+    background-color: transparent;
+    border: none;
+    transition: all 0.2s ease-in-out;
+    color: white;
+}
+
+.main_invisible{
+    top: 100vh;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.main_visible{
+    top: 400px;
+    opacity: 1;
+}
+
+@media screen and (max-width: 600px) {
+    .main_visible{
+        top: 200px;
+    }
+}
+
+.main__title {
+    margin: 20px 0 ;
+    text-align: center;
+}
+
+.main__socials {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.main__social__icon {
+    display: block;
+}
+
+.main__social__icon:not(:last-child) {
+    margin-right: 40px;
+}
+
+.main__social__icon svg{
+    height: 40px;
+}
