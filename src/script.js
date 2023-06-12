@@ -284,9 +284,9 @@ function animateRectanglesToBase () {
 // ! post processing
 
 const params = {
-  threshold: 0.09,
-  strength: 0.8,
-  radius: 0.2,
+  threshold: 0,
+  strength: 0.9,
+  radius: 0.8,
 };
 
 const renderTarget = new THREE.WebGLRenderTarget(
@@ -399,7 +399,7 @@ const createText = (text1, font, x = 0, y = 0, z = 0, rotate) => {
     font: font,
     size: 0.3,
     height: 0.0001,
- 
+    curveSegments: 12,
   });
   
   
@@ -419,7 +419,7 @@ const createText = (text1, font, x = 0, y = 0, z = 0, rotate) => {
 };
 
 const fontLoader = new FontLoader(LoadingManager);
-fontLoader.load("/fonts/helvetiker_regular.typeface.json", (font) => {
+fontLoader.load("/fonts/titillium_bold.typeface.json", (font) => {
   text = createText("ib1zza", font, 0, 0, 0, {
     x: 0,
     y: 0,
