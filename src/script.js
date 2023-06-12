@@ -166,13 +166,15 @@ const createRectangles = () => {
       element.rotation.y = (Math.PI * 2 * (count - i)) / count;
       element.position.z = Math.sin((Math.PI * 2 * (count - i + 70)) / (count)) * multiplier ;
       element.position.x = -Math.cos((Math.PI * 2 * (count - i + 70)) / (count)) * multiplier;
-      element.position.y = 0;
+    
 
       arr.push(element);
   }
   }
+  group.position.z = -3.5;
+  group.rotation.x = Math.PI / 2
   group.add(...arr)
-  scene.add(group);
+  camera.add(group);
 }
 
 function animateRectanglesToBase () {
@@ -388,36 +390,11 @@ function hideRectangles  () {
     gsap.to(triangleMaterial.uniforms.uOpacityMultiplier, {
       duration: duration,
       value:  0,
-     
     })
-
-    // gsap.to(group.position, {
-    //   duration: duration,
-    //   x: 5,
-    //   y: 3,
-    //   z: 0,
-    // });
-
-    gsap.to(group.position, {
-      duration: duration,
-      x: 0,
-      y: 0,
-      z: 0,
-    });
-
-    group.rotation.set(0,0,0)
-    gsap.to(group.rotation, {
-      duration: duration,
  
-      z: -camera.rotation.x
-      // x: camera.rotation.x,
-      // y: camera.rotation.x,
-    })
-
     gsap.to(textMaterial.uniforms.uOpacity, {
       duration: duration / 2,
       value:  0,
-  
     })
 
     gsap.to(text.position, {
@@ -433,25 +410,13 @@ function hideRectangles  () {
           x: Math.random(),
           z: Math.random(),
         })
-       
-      // gsap.to(element.position, {
-      //     duration: duration,
-      //      y: 2,
-      //     x: element.position.x * 5.0 ,
-      //     z: element.position.z * 5.0,
-      //   }).then(() => {
-      //     scene.remove(group);
-      //     group.remove(element);
-      //   })
-
+ 
       gsap.to(element.position, {
         duration: duration,
-        //  y: 2,
-        x: element.position.x *(1 + Math.random() * 2) ,
-        z: element.position.z *(1 + Math.random() * 2),
+        x: element.position.x *(1 + Math.random() * 1) ,
+        z: element.position.z *(1 + Math.random() * 1),
       }).then(() => {
-        scene.remove(group);
-        group.remove(element);
+        camera.remove(group);
       })
   })
 }
@@ -462,15 +427,6 @@ function showRectangles  () {
   gsap.to(camera.position, {
     duration: duration,
     ...initialState.camera.position
-  });
-
-  group.rotation.set(0,0,0)
-
-  gsap.to(group.position, {
-    duration: duration,
-    x: 0,
-    y: 0,
-    z: 0,
   });
 
     gsap.to(particlesMaterial.uniforms.uMultiplierElevation, {
@@ -494,7 +450,7 @@ function showRectangles  () {
       ...initialState.text.position
     })
 
-  scene.add(group);
+    camera.add(group);
 }
 
 
