@@ -1,8 +1,6 @@
 import * as THREE from 'three'
 import waterParticlesVertexShader from './shaders/coolWavesParticles/vertex.glsl';
 import waterParticlesFragmentShader from './shaders/coolWavesParticles/fragment.glsl';
-import textVertexShader from './shaders/text/vertex.glsl';
-import textFragmentShader from './shaders/text/fragment.glsl';
 
 export const particlesParams = {
     count: 200,
@@ -38,43 +36,29 @@ export const particlesMaterial = new THREE.ShaderMaterial({
 
 export const triangleMaterial = new THREE.ShaderMaterial({
     vertexShader: `
-  
+      varying vec2 vUv;
 
-   varying vec2 vUv;
- 
-  
       void main() {
         gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-    
         vUv = uv;
-       
       }
     `,
     // fragmentShader: `
-   
     // varying vec2 vUv;
     // uniform float uOpacityMultiplier;
-
     //   void main() {
-
     //     float strengthForShadowBottom = vUv.y * vUv.y + 0.05;
-
     //     float strengthForPattern = step(0.48, abs(vUv.x - 0.5)) + step(0.48, abs(vUv.y - 0.5));
-
     //     // mul *= strengthForPattern;
-
     //     vec3 whiteColor = vec3(uOpacityMultiplier - 0.4) * strengthForPattern;
-
     //     vec4 finalColor = vec4(whiteColor, 1.0 * strengthForShadowBottom);
-
     //     gl_FragColor = finalColor;
     //   }
-  
     // `,
     fragmentShader: `
-   
-    varying vec2 vUv;
-    uniform float uOpacityMultiplier;
+      uniform float uOpacityMultiplier;
+
+      varying vec2 vUv;
 
       void main() {
          gl_FragColor = vec4(vec3(0.4) * step(0.48, abs(vUv.x - 0.5)) + step(0.48, abs(vUv.y - 0.5)), 1.0 * vUv.y * vUv.y * uOpacityMultiplier );;
@@ -87,14 +71,9 @@ export const triangleMaterial = new THREE.ShaderMaterial({
  
     transparent: true,
     side: THREE.DoubleSide,
-  });
-  
-  const debugObject = {};
-debugObject.depthColor = "#186691";
-debugObject.surfaceColor = '#9bd8ff';
+  }); 
 
   export const textMaterial = new THREE.ShaderMaterial({
-    // side: THREE.DoubleSide,
     transparent: true,
     uniforms: {
       uTime: { value: 0 },
@@ -129,23 +108,33 @@ debugObject.surfaceColor = '#9bd8ff';
         gl_FragColor = vec4(vColor.rgb * mul, vColor.a);
       }
     `,
-  //   vertexShader: textVertexShader,
-  //   fragmentShader: textFragmentShader,
-  //   uniforms: {
-  //     uTime: { value: 0 },
-
-  //     uBigWavesElevation: { value: 0.2 },
-  //     uBigWavesFrequency: { value: new THREE.Vector2(4, 1.5) },
-  //     uBigWavesSpeed: {value: 0.75},
-
-  //     uDepthColor: { value: new THREE.Color(debugObject.depthColor) },
-  //     uSurfaceColor: { value: new THREE.Color(debugObject.surfaceColor) },
-  //     uColorOffset: { value: 0.08},
-  //     uColorMultiplier: { value: 5 },
-
-  //     uSmallWavesElevation: { value: 0.2 },
-  //     uSmallWavesFrequency: { value: 3.0},
-  //     uSmallWavesSpeed: {value: 0.2},
-  //     uSmallWavesIterations: {value: 4.0},
-  // },
   });
+
+
+  export const overlayMaterial = new THREE.ShaderMaterial(
+    {
+        // wireframe: true,
+        transparent: true,
+        uniforms:
+        {
+            uAlpha: {value: 1}
+        },
+        vertexShader: `
+            varying vec2 vUv;
+            void main()
+            {
+                vUv = uv;
+                gl_Position =  vec4(position, 1.0);
+            }
+        `,
+        fragmentShader: `
+            uniform float uAlpha;
+            varying vec2 vUv;
+            void main()
+            {
+                vec3 finalColor = vec3(0.0);
+                gl_FragColor = vec4(finalColor, uAlpha);
+            }
+            `
+    }
+    )

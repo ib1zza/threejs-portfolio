@@ -2,7 +2,6 @@ import './style.css'
 import * as THREE from 'three'
 // import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as dat from 'lil-gui'
-
 import gsap from "gsap";
 import { EffectComposer } from  'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -11,17 +10,20 @@ import {SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js'
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
 import Stats from "stats.js";
-import {particlesMaterial, triangleMaterial, textMaterial, particlesParams } from "./materials.js";
+import {particlesMaterial, triangleMaterial, textMaterial, particlesParams, overlayMaterial } from "./materials.js";
 
-const  stats = new Stats();
+let state = false;
+const stats = new Stats();
+const animationDuration = 1;
+
 
 const loadingBarElement = document.querySelector('.loadingBar')
 
 const LoadingManager = new THREE.LoadingManager(
     () => {
-      window.setTimeout(() => {
-        addObjectsToScene()
-      }, 1500)
+        window.setTimeout(() => {
+            addObjectsToScene()
+        }, 1500)
         window.setTimeout(() => {
             gsap.to(overlayMaterial.uniforms.uAlpha, {
                 value: 0,
@@ -36,35 +38,16 @@ const LoadingManager = new THREE.LoadingManager(
             loadingBarElement.style.transform = ''  
         }, 500); 
     },
-    (url, itemsLoaded, itemsTotal) => {
+    (_, itemsLoaded, itemsTotal) => {
         const progressRatio = itemsLoaded / itemsTotal;
         loadingBarElement.style.transform = `scaleX(${progressRatio})`
-        console.log(url, itemsLoaded, itemsTotal)
     }
 );
 
-const duration = 1;
  
 function addObjectsToScene() {
-  
-  createRectangles();
-   
-
-    gsap.to(triangleMaterial.uniforms.uOpacityMultiplier, {
-      duration: duration,
-      value:  1,
-    })
-
-    gsap.to(textMaterial.uniforms.uOpacity, {
-      duration: duration / 2,
-      delay: duration / 4,
-      value:  1,
-    })
-
-    gsap.to(text.position, {
-      duration: duration /4 ,
-      z: -2.5,
-    })
+    showRectangles();
+    showText();
 
     camera.add(group);
     camera.add(text);
@@ -74,17 +57,8 @@ const initialState = {
   camera: {
     position: {x: -0.01, y: 3.5,z: 0},
   },
-  rectangles: {
-    position: {x: -0.01, y: 3,z: 0},
-  },
-  text: {
-    position: {x: 0, y: 1,z: 0},
-  }
 }
-/**
- * Base
- */
-// Debug
+
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
@@ -92,47 +66,17 @@ const canvas = document.querySelector('canvas.webgl')
 // Scene
 const scene = new THREE.Scene()
 
-
-// Material
-
-
 //! Overlay
 
 const overlayGeometry = new THREE.PlaneGeometry(2, 2 ,1, 1);
-const overlayMaterial = new THREE.ShaderMaterial(
-{
-    // wireframe: true,
-    transparent: true,
-    uniforms:
-    {
-        uAlpha: {value: 1}
-    },
-    vertexShader: `
-        varying vec2 vUv;
-        void main()
-        {
-            vUv = uv;
-            gl_Position =  vec4(position, 1.0);
-        }
-    `,
-    fragmentShader: `
-        uniform float uAlpha;
-        varying vec2 vUv;
-        void main()
-        {
-            vec3 finalColor = vec3(0.0);
-            gl_FragColor = vec4(finalColor, uAlpha);
-        }
-        `
-}
-)
 
 const overlay = new THREE.Mesh(overlayGeometry, overlayMaterial);
 scene.add(overlay)
+
 overlay.rotation.x = Math.PI / 2
 overlay.position.set(0, 2, 0)
  
-
+// !
 
 /**
  * Sizes
@@ -165,7 +109,6 @@ const camera = new THREE.PerspectiveCamera(50, sizes.width / sizes.height, 0.1, 
 camera.position.set(...Object.values(initialState.camera.position))
 scene.add(camera)
 camera.lookAt(0, 0, 0)
-console.log(camera.rotation)
  
 
 // Controls
@@ -188,6 +131,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 /**
  * Points
  */
+
 let points;
 
 const createPoints = () => {
@@ -214,17 +158,11 @@ const createPoints = () => {
 
 createPoints()
 
-/**
- * Animate
- */
-const clock = new THREE.Clock()
-
 const group = new THREE.Group();
-let arr = [];
-
+let arrayWithRectangles = [];
 
 const count = 120;
-const multiplier =1.2;
+const multiplier = 1.2;
 
 const sizeHeight = 1.0 * multiplier;
 const sizeWidth = 0.6 * multiplier;
@@ -232,10 +170,9 @@ const sizeWidth = 0.6 * multiplier;
 const triangleGeometry = new THREE.PlaneGeometry(sizeWidth, sizeHeight, 1, 1);
 
 const createRectangles = () => {
-  if(arr.length > 0) {
+  if(arrayWithRectangles.length > 0) {
     animateRectanglesToBase();
   } else {
- 
     for (let i = 0; i < count; i++) {
       const element = new THREE.Mesh(
         triangleGeometry,
@@ -248,30 +185,29 @@ const createRectangles = () => {
 
       element.position.z = Math.sin((Math.PI * 2 * (count - i + 70)) / (count)) * multiplier *(1 + Math.random() * 1);
       element.position.x = -Math.cos((Math.PI * 2 * (count - i + 70)) / (count)) * multiplier *(1 + Math.random() * 1);
-      arr.push(element);
+      arrayWithRectangles.push(element);
   }
   }
   group.position.z = -3.5;
   group.rotation.x = Math.PI / 2
-  group.add(...arr)
-  // camera.add(group);
+  group.add(...arrayWithRectangles)
 }
 
 createRectangles();
 
 function animateRectanglesToBase () {
   for (let i = 0; i < count; i++) {
-      const element = arr[i]
+      const element = arrayWithRectangles[i]
    
       gsap.to(element.rotation, {
-          duration: duration,
+          duration: animationDuration,
           x: 0,
           z: 0,
           y: (Math.PI * 2 * (count - i)) / count,
         })
        
       gsap.to(element.position, {
-          duration: duration,
+          duration: animationDuration,
           z: Math.sin((Math.PI * 2 * (count - i + 70)) / (count)) * multiplier ,
           x: -Math.cos((Math.PI * 2 * (count - i + 70)) / (count)) * multiplier,
           y: 0,
@@ -282,68 +218,47 @@ function animateRectanglesToBase () {
 
 
 // ! post processing
-
-const params = {
+const bloomParams = {
   threshold: 0,
   strength: 0.9,
   radius: 0.8,
 };
 
-const renderTarget = new THREE.WebGLRenderTarget(
-  sizes.width,
-  sizes.height,
-  {
-      samples: renderer.getPixelRatio() === 1 ? 2 : 0,
-  }
-)
+let composer;
+function applyPostProcessing() {
 
-const renderScene = new RenderPass( scene, camera );
-
-      const bloomPass = new UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 1.5, 0.4, 0.85 );
-      bloomPass.threshold = params.threshold;
-      bloomPass.strength = params.strength;
-      bloomPass.radius = params.radius;
-
-		 
-
-    const composer = new EffectComposer( renderer, renderTarget);
-    composer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    composer.setSize(sizes.width, sizes.height)
-    composer.addPass( renderScene );
-    composer.addPass( bloomPass );
-
+  const renderTarget = new THREE.WebGLRenderTarget(
+    sizes.width,
+    sizes.height,
+    {
+        samples: renderer.getPixelRatio() === 1 ? 2 : 0,
+    }
+  )
+  
+  const renderPass = new RenderPass( scene, camera );
+  
+  const bloomPass = new UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 0, 0, 0 );
+  bloomPass.threshold = bloomParams.threshold;
+  bloomPass.strength = bloomParams.strength;
+  bloomPass.radius = bloomParams.radius;
+  
+  composer = new EffectComposer( renderer, renderTarget);
+  composer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  composer.setSize(sizes.width, sizes.height)
+  composer.addPass( renderPass );
+  composer.addPass( bloomPass );
+  
   if (renderer.getPixelRatio() === 1 && !renderer.capabilities.isWebGL2) {
-    // antialiasing pass 
+    // antialiasing pass if no webGl2
     const smaaPass = new SMAAPass()
     composer.addPass(smaaPass)
     console.log("using antialias pass (SMAAPass)")
   }
-
-  
-
-
-
-
-// ! animations
-
-
-let state = false;
-
-function buttonListener() {
-    if(state) {
-      console.log(arr.length)
-      showRectangles();
-  } else {
-      hideRectangles()
-  }
-  state = !state;
 }
 
+applyPostProcessing()
 
-
-
-
-
+// Debug UI and Stats
 
 if(window.location.hash == '#debug')
 {
@@ -369,19 +284,19 @@ gui.add(overlay.position, 'z').min(-10).max(10).step(0.01)
 
     const bloomFolder = gui.addFolder( 'bloom' );
 
-				bloomFolder.add( params, 'threshold', 0.0, 1.0 ).onChange( function ( value ) {
+				bloomFolder.add( bloomParams, 'threshold', 0.0, 1.0 ).onChange( function ( value ) {
 
 					bloomPass.threshold = Number( value );
 
 				} );
 
-				bloomFolder.add( params, 'strength', 0.0, 3.0 ).onChange( function ( value ) {
+				bloomFolder.add( bloomParams, 'strength', 0.0, 3.0 ).onChange( function ( value ) {
 
 					bloomPass.strength = Number( value );
 
 				} );
 
-				gui.add( params, 'radius', 0.0, 1.0 ).step( 0.01 ).onChange( function ( value ) {
+				gui.add( bloomParams, 'radius', 0.0, 1.0 ).step( 0.01 ).onChange( function ( value ) {
 
 					bloomPass.radius = Number( value );
 
@@ -392,6 +307,8 @@ gui.add(overlay.position, 'z').min(-10).max(10).step(0.01)
         }
         gui.add(o, 'listener').name('trigger')
 }
+
+// Text creation
 
 let text;
 const createText = (text1, font, x = 0, y = 0, z = 0, rotate) => {
@@ -426,24 +343,28 @@ fontLoader.load("/fonts/titillium_bold.typeface.json", (font) => {
     z: 0,
   });
   
-  text.position.z = -2.5;
-  // camera.add(text);
-  
+  text.position.z = -2.5; 
 })
 
 
+/**
+ * Animate
+ */
+
+const clock = new THREE.Clock()
 
 const tick = () =>
 {
-  stats.begin();
+    stats.begin();
 
     const elapsedTime = clock.getElapsedTime()
 
     // Update objects
     particlesMaterial.uniforms.uTime.value = elapsedTime;
     
-    if(!state)
-    group.rotation.y = elapsedTime / 2;
+    if(!state){
+      group.rotation.y = elapsedTime / 2;
+    }
      
     if(textMaterial){
       textMaterial.uniforms.uTime.value = elapsedTime;
@@ -453,117 +374,143 @@ const tick = () =>
     // controls.update()
     
     // Render
-    // renderer.render(scene, camera)
     composer.render();
     
     stats.end();
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
-   
-
 }
 
 tick()
 
 
-function hideRectangles  () {
-  gsap.to(camera.position, {
-      duration: duration,
-      x: -7,
-      y: 1.5,
-      z: 0,
-    });
+// ! animations
 
-    gsap.to(camera.rotation, {
-      duration: duration,
-      x: -2.1,
-      y: -Math.PI / 2,
-      z: -2.1,
-    }) 
-    
+
+
+function buttonListener(buttonState) {
+    if(buttonState) {
+      ACTION_SHOWSTART();
+    } else {
+        ACTION_SHOWINFO()
+    }
+    state = !state
+}
+
+function ACTION_SHOWINFO  () {
+  moveCameraWaves();
 
     gsap.to(particlesMaterial.uniforms.uMultiplierElevation, {
-      duration: duration,
+      duration: animationDuration,
       value: 1
     });
 
-    gsap.to(triangleMaterial.uniforms.uOpacityMultiplier, {
-      duration: duration,
-      value:  0,
-    })
+    hideRectangles()
  
-    gsap.to(textMaterial.uniforms.uOpacity, {
-      duration: duration / 4,
-      value:  0,
-    })
+    hideText();
+}
 
-    gsap.to(text.position, {
-      duration: duration ,
-      z: -5,
-    })
+function ACTION_SHOWSTART  () {
+  showRectangles();
+  moveCameraDefault();
 
+  gsap.to(particlesMaterial.uniforms.uMultiplierElevation, {
+    duration: animationDuration,
+    value: 0
+  });
 
-  arr.forEach(element => {
-      gsap.to(element.rotation, {
-          duration: duration,
-          x: Math.random(),
-          z: Math.random(),
-        })
- 
-      gsap.to(element.position, {
-        duration: duration,
-        x: element.position.x *(1 + Math.random() * 1) ,
-        z: element.position.z *(1 + Math.random() * 1),
-      }).then(() => {
-        camera.remove(group);
-      })
+  showText();
+
+  camera.add(group);
+}
+
+function showRectangles() {
+  createRectangles();
+
+  gsap.to(triangleMaterial.uniforms.uOpacityMultiplier, {
+    duration: animationDuration,
+    value:  1,
   })
 }
 
+function hideRectangles() {
+  gsap.to(triangleMaterial.uniforms.uOpacityMultiplier, {
+    duration: animationDuration,
+    value:  0,
+  })
 
+  arrayWithRectangles.forEach(element => {
+    gsap.to(element.rotation, {
+        duration: animationDuration,
+        x: Math.random(),
+        z: Math.random(),
+      })
 
-function showRectangles  () {
-
-  createRectangles();
-  gsap.to(camera.position, {
-    // duration: duration * 2,
-    ...initialState.camera.position
-  });
-  // camera.lookAt(0, 0, 0);
-
-    gsap.to(particlesMaterial.uniforms.uMultiplierElevation, {
-      duration: duration,
-      value: 0
-    });
-
-    gsap.to(triangleMaterial.uniforms.uOpacityMultiplier, {
-      duration: duration,
-      value:  1,
+    gsap.to(element.position, {
+      duration: animationDuration,
+      x: element.position.x *(1 + Math.random() * 1) ,
+      z: element.position.z *(1 + Math.random() * 1),
+    }).then(() => {
+      camera.remove(group);
     })
-
-    gsap.to(textMaterial.uniforms.uOpacity, {
-      duration: duration / 4,
-      delay: duration / 2,
-      value:  1,
-    })
-
-    gsap.to(text.position, {
-      delay: duration / 2,
-      duration: duration /4 ,
-      z: -2.5,
-    })
-
-
-    gsap.to(camera.rotation, {
-      duration: duration,
-      x:   -Math.PI / 2,
-      y: 0,
-      z: -Math.PI / 2,
-    })
-
-    camera.add(group);
+})
 }
 
+function showText() {
+  gsap.to(textMaterial.uniforms.uOpacity, {
+    duration: animationDuration / 2,
+    delay: animationDuration / 4,
+    value:  1,
+  })
+
+  gsap.to(text.position, {
+    duration: animationDuration /4 ,
+    z: -2.5,
+  })
+}
+
+function hideText() {
+
+  gsap.to(textMaterial.uniforms.uOpacity, {
+    duration: animationDuration / 4,
+    value:  0,
+  })
+
+  gsap.to(text.position, {
+    duration: animationDuration ,
+    z: -5,
+  })
+}
+
+function moveCameraWaves() {
+  gsap.to(camera.position, {
+    duration: animationDuration,
+    x: -7,
+    y: 1.5,
+    z: 0,
+  });
+
+  gsap.to(camera.rotation, {
+    duration: animationDuration,
+    x: -2.1,
+    y: -Math.PI / 2,
+    z: -2.1,
+  }) 
+}
+
+function moveCameraDefault() {
+  gsap.to(camera.position, {
+    duration: animationDuration,
+    ...initialState.camera.position
+  });
+
+  gsap.to(camera.rotation, {
+    duration: animationDuration,
+    x:   -Math.PI / 2,
+    y: 0,
+    z: -Math.PI / 2,
+  })
+}
 
 
 export {buttonListener}

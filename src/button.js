@@ -1,5 +1,4 @@
 import {buttonListener} from "./script.js";
-import gsap from "gsap";
 
 const button = document.querySelector('.button')
 const icon = button.querySelector('svg')
