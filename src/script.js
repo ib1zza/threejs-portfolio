@@ -79,11 +79,13 @@ window.addEventListener('resize', () =>
 const camera = new THREE.PerspectiveCamera(50, sizes.width / sizes.height, 0.1, 10)
 camera.position.set(...Object.values(initialState.camera.position))
 scene.add(camera)
+camera.lookAt(0, 0, 0)
+console.log(camera.rotation)
  
 
 // Controls
-const controls = new OrbitControls(camera, canvas)
-controls.enableDamping = true
+// const controls = new OrbitControls(camera, canvas)
+// controls.enableDamping = true
 
 /**
  * Renderer
@@ -332,13 +334,14 @@ const createText = (text1, font, x = 0, y = 0, z = 0, rotate) => {
 
 const fontLoader = new FontLoader();
 fontLoader.load("/fonts/helvetiker_regular.typeface.json", (font) => {
-  text = createText("ib1zza", font, 0, 1, 0, {
-    x: -Math.PI / 2,
-    y: -Math.PI / 2,
+  text = createText("ib1zza", font, 0, 0, 0, {
+    x: 0,
+    y: 0,
     z: 0,
   });
- 
-  scene.add(text);
+
+  text.position.z = -2.5;
+  camera.add(text);
   
 })
 
@@ -359,16 +362,19 @@ const tick = () =>
     if(textMaterial){
       textMaterial.uniforms.uTime.value = elapsedTime;
     }
+    
     // Update controls
-    controls.update()
+    // controls.update()
     
     // Render
     // renderer.render(scene, camera)
     composer.render();
-
+    
     stats.end();
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
+   
+
 }
 
 tick()
@@ -377,10 +383,18 @@ tick()
 function hideRectangles  () {
   gsap.to(camera.position, {
       duration: duration,
-      x: -5,
-      y: 2,
+      x: -7,
+      y: 1.5,
       z: 0,
     });
+
+    gsap.to(camera.rotation, {
+      duration: duration,
+      x: -2.1,
+      y: -Math.PI / 2,
+      z: -2.1,
+    }) 
+    
 
     gsap.to(particlesMaterial.uniforms.uMultiplierElevation, {
       duration: duration,
@@ -393,14 +407,14 @@ function hideRectangles  () {
     })
  
     gsap.to(textMaterial.uniforms.uOpacity, {
-      duration: duration / 2,
+      duration: duration / 4,
       value:  0,
     })
 
     gsap.to(text.position, {
       duration: duration ,
-      y: 0.5,
-      x: 10,
+      z: -5,
+      // x: 10,
     })
 
 
@@ -428,6 +442,7 @@ function showRectangles  () {
     duration: duration,
     ...initialState.camera.position
   });
+  camera.lookAt(0, 0, 0);
 
     gsap.to(particlesMaterial.uniforms.uMultiplierElevation, {
       duration: duration,
@@ -440,14 +455,23 @@ function showRectangles  () {
     })
 
     gsap.to(textMaterial.uniforms.uOpacity, {
-      duration: duration /2 ,
+      duration: duration / 4,
       delay: duration / 2,
       value:  1,
     })
 
     gsap.to(text.position, {
-      duration: duration / 5,
-      ...initialState.text.position
+      delay: duration / 2,
+      duration: duration /4 ,
+      z: -2.5,
+    })
+
+
+    gsap.to(camera.rotation, {
+      duration: duration,
+      x:   -Math.PI / 2,
+      y: 0,
+      z: -Math.PI / 2,
     })
 
     camera.add(group);
