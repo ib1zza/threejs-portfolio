@@ -47,7 +47,7 @@ button {
     right: 0;
     bottom: 0;
     left: 0;
-    /* top: calc(50% - 80px); */
+ 
 }
 
 .xmark {
@@ -129,10 +129,16 @@ button {
     display: block;
 }
 
+.main__social__icon:hover svg {
+    fill: rgb(180, 180, 180);
+}
+
 .main__social__icon:not(:last-child) {
     margin-right: 40px;
 }
 
 .main__social__icon svg{
     height: 40px;
+    transition: all 0.2s ease-in-out;
 }
+

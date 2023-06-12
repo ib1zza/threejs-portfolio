@@ -2,8 +2,7 @@ import './style.css'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as dat from 'lil-gui'
-import waterParticlesVertexShader from './shaders/coolWavesParticles/vertex.glsl';
-import waterParticlesFragmentShader from './shaders/coolWavesParticles/fragment.glsl';
+
 import gsap from "gsap";
 import { EffectComposer } from  'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
@@ -11,13 +10,19 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import {SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js'
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
+import Stats from "stats.js";
+import {particlesMaterial, triangleMaterial, textMaterial, particlesParams } from "./materials.js";
 
-const duration = 0.8;
-let textMaterial;
+const  stats = new Stats();
+
+
+
+const duration = 1;
+ 
 
 const initialState = {
   camera: {
-    position: {x: -0.01, y: 2.5,z: 0},
+    position: {x: -0.01, y: 3.5,z: 0},
   },
   rectangles: {
     position: {x: -0.01, y: 3,z: 0},
@@ -40,9 +45,7 @@ const scene = new THREE.Scene()
 
 // Material
 
-const parameters = {}
-parameters.count = 200
-parameters.size = 5
+
  
 
 
@@ -73,10 +76,10 @@ window.addEventListener('resize', () =>
  * Camera
  */
 // Base camera
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.001, 100)
+const camera = new THREE.PerspectiveCamera(50, sizes.width / sizes.height, 0.1, 10)
 camera.position.set(...Object.values(initialState.camera.position))
 scene.add(camera)
-
+ 
 
 // Controls
 const controls = new OrbitControls(camera, canvas)
@@ -94,32 +97,6 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
-
-const material = new THREE.ShaderMaterial({
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    vertexColors: true,
-    vertexShader: waterParticlesVertexShader,
-    fragmentShader: waterParticlesFragmentShader,
-    uniforms: {
-        uTime: {value: 0},
-        uSize: {value: parameters.size * renderer.getPixelRatio()},
-        
-        uDepthColor: { value: new THREE.Color("#000000") },
-        uSurfaceColor: { value: new THREE.Color("#ffffff") },
-        uColorOffset: { value: 0.1},
-        uColorMultiplier: { value: 0.5 },
-
-        uSmallWavesElevation: { value: 10 },
-        uSmallWavesFrequency: { value: 0.5},
-        uSmallWavesSpeed: {value: 0.6},
-        uSmallWavesIterations: {value: 1.0},
-
-        uMultiplierElevation: { value: 0 },
-    }
-})
-
-
  
 /**
  * Points
@@ -131,11 +108,11 @@ const createPoints = () => {
 
     const vertices = [];
     
-    for ( let i = 0; i < parameters.count; i ++ ) {
-        for ( let j = 0; j < parameters.count; j ++ ) {
-            const x = ((i) / parameters.count - 0.5)  * 10;
+    for ( let i = 0; i < particlesParams.count; i ++ ) {
+        for ( let j = 0; j < particlesParams.count; j ++ ) {
+            const x = ((i) / particlesParams.count - 0.5)  * 10;
             const y = 0;
-            const z =  ((j) / parameters.count - 0.5)  * 10;
+            const z =  ((j) / particlesParams.count - 0.5)  * 10;
             vertices.push( x, y, z );
         }
     }
@@ -143,7 +120,7 @@ const createPoints = () => {
     
     geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
     
-     points = new THREE.Points(geometry, material)
+     points = new THREE.Points(geometry, particlesMaterial)
 
     scene.add(points)
 }
@@ -158,81 +135,64 @@ const clock = new THREE.Clock()
 const group = new THREE.Group();
 let arr = [];
 
-const triangleMaterial = new THREE.ShaderMaterial({
-    vertexShader: `
-  
-    varying vec2 vUv;
- 
-  
-      void main() {
-        gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-       
-        vUv = uv;
-      
-      }
-    `,
-    fragmentShader: `
-   
-    varying vec2 vUv;
- 
-   
-    uniform float uOpacityMultiplier;
-  
-      void main() {
-        vec3 color = vec3(1.0) * uOpacityMultiplier;
-
-        vec2 newUv = vUv;
-        newUv.y = newUv.y * newUv.y + 0.1;
-
-        vec3 mul = vec3(newUv.y);
-
-        float strength = step(0.495, abs(vUv.x - 0.5)) + step(0.495, abs(vUv.y - 0.5)) ;
-
-        gl_FragColor = vec4( color, mul * strength );
-      }
-  
-    `,
-    uniforms: {
-        uOpacityMultiplier: { value: 1 },
-    },
- 
-    transparent: true,
-    side: THREE.DoubleSide,
-  });
-  
-
-
-
 
 const count = 120;
 const multiplier =1.2;
 
 const sizeHeight = 1.0 * multiplier;
-const sizeWidth = 0.5 * multiplier;
+const sizeWidth = 0.6 * multiplier;
 
+const triangleGeometry = new THREE.PlaneGeometry(sizeWidth, sizeHeight, 1, 1);
+
+const mesh = new THREE.InstancedMesh(
+  triangleGeometry,
+  triangleMaterial,
+  count
+)
+
+mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
 
 const createRectangles = () => {
   if(arr.length > 0) {
     animateRectanglesToBase();
   } else {
-    for (let i = 0; i < count; i++) {
-        const element = new THREE.Mesh(
-          new THREE.PlaneGeometry(sizeWidth, sizeHeight),
-          triangleMaterial
-        );
-    
-        element.rotation.y = (Math.PI * 2 * (count - i)) / count;
-    
-        element.position.z = Math.sin((Math.PI * 2 * (count - i + 70)) / (count)) * multiplier;
-        element.position.x = -Math.cos((Math.PI * 2 * (count - i + 70)) / (count)) * multiplier;
-
-        arr.push(element);
-        group.add(element); 
-    }
-  }
  
-  group.position.y = 0.025;
+    for (let i = 0; i < count; i++) {
+      const element = new THREE.Mesh(
+        triangleGeometry,
+        triangleMaterial
+      );
+  
+      element.rotation.y = (Math.PI * 2 * (count - i)) / count;
+      element.position.z = Math.sin((Math.PI * 2 * (count - i + 70)) / (count)) * multiplier ;
+      element.position.x = -Math.cos((Math.PI * 2 * (count - i + 70)) / (count)) * multiplier;
+      element.position.y = 0;
+
+      arr.push(element);
+  }
+  }
+  group.add(...arr)
   scene.add(group);
+}
+
+function animateRectanglesToBase () {
+  for (let i = 0; i < count; i++) {
+      const element = arr[i]
+   
+      gsap.to(element.rotation, {
+          duration: duration,
+          x: 0,
+          z: 0,
+          y: (Math.PI * 2 * (count - i)) / count,
+        })
+       
+      gsap.to(element.position, {
+          duration: duration,
+          z: Math.sin((Math.PI * 2 * (count - i + 70)) / (count)) * multiplier ,
+          x: -Math.cos((Math.PI * 2 * (count - i + 70)) / (count)) * multiplier,
+          y: 0,
+        })
+  }
 }
 
 createRectangles();
@@ -240,9 +200,9 @@ createRectangles();
 // ! post processing
 
 const params = {
-  threshold: 0.35,
-  strength: 2,
-  radius: 0.8,
+  threshold: 0.09,
+  strength: 0.8,
+  radius: 0.2,
 };
 
 const renderTarget = new THREE.WebGLRenderTarget(
@@ -283,51 +243,39 @@ const renderScene = new RenderPass( scene, camera );
 // ! animations
 
 
+let state = false;
 
-
-function buttonListener(state) {
+function buttonListener() {
     if(state) {
+      console.log(arr.length)
       showRectangles();
   } else {
       hideRectangles()
   }
-
+  state = !state;
 }
 
 
-function animateRectanglesToBase () {
-    for (let i = 0; i < count; i++) {
-        const element = arr[i]
-     
-        gsap.to(element.rotation, {
-            duration: duration,
-            x: 0,
-            z: 0,
-            y: (Math.PI * 2 * (count - i)) / count,
-          })
-         
-        gsap.to(element.position, {
-            duration: duration,
-            z: Math.sin((Math.PI * 2 * (count - i + 70)) / (count)) * multiplier ,
-            x: -Math.cos((Math.PI * 2 * (count - i + 70)) / (count)) * multiplier,
-          })
-          group.add(element); 
-    }
-}
+
+
+
 
 
 if(window.location.hash == '#debug')
 {
+stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+document.body.appendChild( stats.dom );
+
     const gui = new dat.GUI();
     
-    gui.add(material.uniforms.uSize, 'value').min(0).max(10).step(0.001).name('point size')
-    gui.add(material.uniforms.uColorOffset, 'value').min(0).max(1).step(0.001).name('color offset')
-    gui.add(material.uniforms.uColorMultiplier, 'value').min(0).max(10).step(0.001).name('color multiplier')
+    gui.add(particlesMaterial.uniforms.uSize, 'value').min(0).max(10).step(0.001).name('point size')
+    gui.add(particlesMaterial.uniforms.uColorOffset, 'value').min(0).max(1).step(0.001).name('color offset')
+    gui.add(particlesMaterial.uniforms.uColorMultiplier, 'value').min(0).max(10).step(0.001).name('color multiplier')
 
-    gui.add(material.uniforms.uSmallWavesElevation, 'value').min(0).max(10).step(0.001).name('small waves elevation')
-    gui.add(material.uniforms.uSmallWavesFrequency, 'value').min(0).max(10).step(0.001).name('small waves frequency')
-    gui.add(material.uniforms.uSmallWavesSpeed, 'value').min(0).max(10).step(0.001).name('small waves speed')
-    gui.add(material.uniforms.uSmallWavesIterations, 'value').min(0).max(10).step(0.001).name('small waves iterations')
+    gui.add(particlesMaterial.uniforms.uSmallWavesElevation, 'value').min(0).max(10).step(0.001).name('small waves elevation')
+    gui.add(particlesMaterial.uniforms.uSmallWavesFrequency, 'value').min(0).max(10).step(0.001).name('small waves frequency')
+    gui.add(particlesMaterial.uniforms.uSmallWavesSpeed, 'value').min(0).max(10).step(0.001).name('small waves speed')
+    gui.add(particlesMaterial.uniforms.uSmallWavesIterations, 'value').min(0).max(10).step(0.001).name('small waves iterations')
 
     const bloomFolder = gui.addFolder( 'bloom' );
 
@@ -349,7 +297,10 @@ if(window.location.hash == '#debug')
 
 				} );
 
-			 
+        const o = {
+          listener: buttonListener
+        }
+        gui.add(o, 'listener').name('trigger')
 }
 
 let text;
@@ -358,15 +309,9 @@ const createText = (text1, font, x = 0, y = 0, z = 0, rotate) => {
     font: font,
     size: 0.3,
     height: 0.0001,
-
-    // curveSegments: 5,
-    // bevelEnabled: true,
-    // bevelThickness: 0.01,
-    // bevelSize: 0.005,
-    // bevelOffset: 0,
-    // bevelSegments: 3,
+ 
   });
-  //   textGeometry.computeBoundingBox();
+  
   
 
   if (rotate) {
@@ -376,36 +321,6 @@ const createText = (text1, font, x = 0, y = 0, z = 0, rotate) => {
   }
   textGeometry.center();
 
-  // const textMaterial = new THREE.MeshBasicMaterial({
-  //   side: THREE.DoubleSide,
-  // });
-
-  textMaterial = new THREE.ShaderMaterial({
-    side: THREE.DoubleSide,
-    transparent: true,
-    uniforms: {
-      uTime: { value: 0 },
-      uOpacity: { value: 1}
-    },
-    vertexShader: `
-
-      varying vec2 vUv;
-      void main() {
-        vUv = uv;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
-      }
-    `,
-    fragmentShader: `
-      uniform float uOpacity;
-      uniform float uTime;
-      varying vec2 vUv;
-      void main() {
-        float time = uTime * 0.8;
-        vec3 color = vec3( abs(sin(time )) + 0.4, 0.3, abs(cos(time)) + 0.4);
-        gl_FragColor = vec4(color, 1.0 * uOpacity);
-      }
-    `,
-  });
   const text = new THREE.Mesh(textGeometry, textMaterial);
   text.position.y = y;
   text.position.z = z;
@@ -429,14 +344,18 @@ fontLoader.load("/fonts/helvetiker_regular.typeface.json", (font) => {
 
 const tick = () =>
 {
+  stats.begin();
+
     const elapsedTime = clock.getElapsedTime()
 
     // Update objects
-    material.uniforms.uTime.value = elapsedTime;
-    group.rotation.y = elapsedTime / 2
+    particlesMaterial.uniforms.uTime.value = elapsedTime;
+    
+    if(!state)
+    group.rotation.y = elapsedTime / 2;
+     
     if(textMaterial){
-    textMaterial.uniforms.uTime.value = elapsedTime;
-    // console.log(textMaterial.uniforms.uOpacity)}
+      textMaterial.uniforms.uTime.value = elapsedTime;
     }
     // Update controls
     controls.update()
@@ -445,7 +364,7 @@ const tick = () =>
     // renderer.render(scene, camera)
     composer.render();
 
-
+    stats.end();
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
 }
@@ -461,7 +380,7 @@ function hideRectangles  () {
       z: 0,
     });
 
-    gsap.to(material.uniforms.uMultiplierElevation, {
+    gsap.to(particlesMaterial.uniforms.uMultiplierElevation, {
       duration: duration,
       value: 1
     });
@@ -472,12 +391,28 @@ function hideRectangles  () {
      
     })
 
+    // gsap.to(group.position, {
+    //   duration: duration,
+    //   x: 5,
+    //   y: 3,
+    //   z: 0,
+    // });
+
     gsap.to(group.position, {
       duration: duration,
-      x: 5,
-      y: 3,
+      x: 0,
+      y: 0,
       z: 0,
     });
+
+    group.rotation.set(0,0,0)
+    gsap.to(group.rotation, {
+      duration: duration,
+ 
+      z: -camera.rotation.x
+      // x: camera.rotation.x,
+      // y: camera.rotation.x,
+    })
 
     gsap.to(textMaterial.uniforms.uOpacity, {
       duration: duration / 2,
@@ -499,15 +434,25 @@ function hideRectangles  () {
           z: Math.random(),
         })
        
+      // gsap.to(element.position, {
+      //     duration: duration,
+      //      y: 2,
+      //     x: element.position.x * 5.0 ,
+      //     z: element.position.z * 5.0,
+      //   }).then(() => {
+      //     scene.remove(group);
+      //     group.remove(element);
+      //   })
+
       gsap.to(element.position, {
-          duration: duration,
-           
-          x: element.position.x * 5.0 ,
-          z: element.position.z * 5.0,
-        }).then(() => {
-          scene.remove(group);
-          group.remove(element);
-        })
+        duration: duration,
+        //  y: 2,
+        x: element.position.x *(1 + Math.random() * 2) ,
+        z: element.position.z *(1 + Math.random() * 2),
+      }).then(() => {
+        scene.remove(group);
+        group.remove(element);
+      })
   })
 }
 
@@ -519,14 +464,16 @@ function showRectangles  () {
     ...initialState.camera.position
   });
 
+  group.rotation.set(0,0,0)
+
   gsap.to(group.position, {
     duration: duration,
-    x: -0.001,
+    x: 0,
     y: 0,
     z: 0,
   });
 
-    gsap.to(material.uniforms.uMultiplierElevation, {
+    gsap.to(particlesMaterial.uniforms.uMultiplierElevation, {
       duration: duration,
       value: 0
     });
@@ -550,4 +497,7 @@ function showRectangles  () {
   scene.add(group);
 }
 
+
+
 export {buttonListener}
+
