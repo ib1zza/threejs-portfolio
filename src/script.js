@@ -1,6 +1,6 @@
 import './style.css'
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+// import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as dat from 'lil-gui'
 
 import gsap from "gsap";
@@ -15,10 +15,60 @@ import {particlesMaterial, triangleMaterial, textMaterial, particlesParams } fro
 
 const  stats = new Stats();
 
+const loadingBarElement = document.querySelector('.loadingBar')
 
+const LoadingManager = new THREE.LoadingManager(
+    () => {
+      window.setTimeout(() => {
+        addObjectsToScene()
+      }, 1500)
+        window.setTimeout(() => {
+            gsap.to(overlayMaterial.uniforms.uAlpha, {
+                value: 0,
+                duration: 1,
+                ease: "power2.inOut"
+            }).then(() => {
+              scene.remove(overlay)
+              overlay.material.dispose()
+              overlay.geometry.dispose()
+            })
+            loadingBarElement.classList.add("finished")
+            loadingBarElement.style.transform = ''  
+        }, 500); 
+    },
+    (url, itemsLoaded, itemsTotal) => {
+        const progressRatio = itemsLoaded / itemsTotal;
+        loadingBarElement.style.transform = `scaleX(${progressRatio})`
+        console.log(url, itemsLoaded, itemsTotal)
+    }
+);
 
 const duration = 1;
  
+function addObjectsToScene() {
+  
+  createRectangles();
+   
+
+    gsap.to(triangleMaterial.uniforms.uOpacityMultiplier, {
+      duration: duration,
+      value:  1,
+    })
+
+    gsap.to(textMaterial.uniforms.uOpacity, {
+      duration: duration / 2,
+      delay: duration / 4,
+      value:  1,
+    })
+
+    gsap.to(text.position, {
+      duration: duration /4 ,
+      z: -2.5,
+    })
+
+    camera.add(group);
+    camera.add(text);
+}
 
 const initialState = {
   camera: {
@@ -46,6 +96,41 @@ const scene = new THREE.Scene()
 // Material
 
 
+//! Overlay
+
+const overlayGeometry = new THREE.PlaneGeometry(2, 2 ,1, 1);
+const overlayMaterial = new THREE.ShaderMaterial(
+{
+    // wireframe: true,
+    transparent: true,
+    uniforms:
+    {
+        uAlpha: {value: 1}
+    },
+    vertexShader: `
+        varying vec2 vUv;
+        void main()
+        {
+            vUv = uv;
+            gl_Position =  vec4(position, 1.0);
+        }
+    `,
+    fragmentShader: `
+        uniform float uAlpha;
+        varying vec2 vUv;
+        void main()
+        {
+            vec3 finalColor = vec3(0.0);
+            gl_FragColor = vec4(finalColor, uAlpha);
+        }
+        `
+}
+)
+
+const overlay = new THREE.Mesh(overlayGeometry, overlayMaterial);
+scene.add(overlay)
+overlay.rotation.x = Math.PI / 2
+overlay.position.set(0, 2, 0)
  
 
 
@@ -146,14 +231,6 @@ const sizeWidth = 0.6 * multiplier;
 
 const triangleGeometry = new THREE.PlaneGeometry(sizeWidth, sizeHeight, 1, 1);
 
-const mesh = new THREE.InstancedMesh(
-  triangleGeometry,
-  triangleMaterial,
-  count
-)
-
-mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-
 const createRectangles = () => {
   if(arr.length > 0) {
     animateRectanglesToBase();
@@ -166,18 +243,21 @@ const createRectangles = () => {
       );
   
       element.rotation.y = (Math.PI * 2 * (count - i)) / count;
-      element.position.z = Math.sin((Math.PI * 2 * (count - i + 70)) / (count)) * multiplier ;
-      element.position.x = -Math.cos((Math.PI * 2 * (count - i + 70)) / (count)) * multiplier;
-    
+      element.rotation.x = Math.random();
+      element.position.z = Math.random();
 
+      element.position.z = Math.sin((Math.PI * 2 * (count - i + 70)) / (count)) * multiplier *(1 + Math.random() * 1);
+      element.position.x = -Math.cos((Math.PI * 2 * (count - i + 70)) / (count)) * multiplier *(1 + Math.random() * 1);
       arr.push(element);
   }
   }
   group.position.z = -3.5;
   group.rotation.x = Math.PI / 2
   group.add(...arr)
-  camera.add(group);
+  // camera.add(group);
 }
+
+createRectangles();
 
 function animateRectanglesToBase () {
   for (let i = 0; i < count; i++) {
@@ -199,7 +279,7 @@ function animateRectanglesToBase () {
   }
 }
 
-createRectangles();
+
 
 // ! post processing
 
@@ -281,6 +361,12 @@ document.body.appendChild( stats.dom );
     gui.add(particlesMaterial.uniforms.uSmallWavesSpeed, 'value').min(0).max(10).step(0.001).name('small waves speed')
     gui.add(particlesMaterial.uniforms.uSmallWavesIterations, 'value').min(0).max(10).step(0.001).name('small waves iterations')
 
+
+    gui.add(overlay.position, 'x').min(-10).max(10).step(0.01)
+gui.add(overlay.position, 'y').min(-10).max(10).step(0.01)
+gui.add(overlay.position, 'z').min(-10).max(10).step(0.01)
+
+
     const bloomFolder = gui.addFolder( 'bloom' );
 
 				bloomFolder.add( params, 'threshold', 0.0, 1.0 ).onChange( function ( value ) {
@@ -332,16 +418,16 @@ const createText = (text1, font, x = 0, y = 0, z = 0, rotate) => {
   return text;
 };
 
-const fontLoader = new FontLoader();
+const fontLoader = new FontLoader(LoadingManager);
 fontLoader.load("/fonts/helvetiker_regular.typeface.json", (font) => {
   text = createText("ib1zza", font, 0, 0, 0, {
     x: 0,
     y: 0,
     z: 0,
   });
-
+  
   text.position.z = -2.5;
-  camera.add(text);
+  // camera.add(text);
   
 })
 
@@ -414,7 +500,6 @@ function hideRectangles  () {
     gsap.to(text.position, {
       duration: duration ,
       z: -5,
-      // x: 10,
     })
 
 
@@ -435,14 +520,16 @@ function hideRectangles  () {
   })
 }
 
+
+
 function showRectangles  () {
 
   createRectangles();
   gsap.to(camera.position, {
-    duration: duration,
+    // duration: duration * 2,
     ...initialState.camera.position
   });
-  camera.lookAt(0, 0, 0);
+  // camera.lookAt(0, 0, 0);
 
     gsap.to(particlesMaterial.uniforms.uMultiplierElevation, {
       duration: duration,

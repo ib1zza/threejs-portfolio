@@ -80,7 +80,7 @@ export const triangleMaterial = new THREE.ShaderMaterial({
   
     `,
     uniforms: {
-        uOpacityMultiplier: { value: 1 },
+        uOpacityMultiplier: { value: 0 },
     },
  
     transparent: true,
@@ -93,7 +93,7 @@ export const triangleMaterial = new THREE.ShaderMaterial({
     transparent: true,
     uniforms: {
       uTime: { value: 0 },
-      uOpacity: { value: 1}
+      uOpacity: { value: 0}
     },
     vertexShader: `
 
