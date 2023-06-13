@@ -10,19 +10,22 @@ import {SMAAPass } from 'three/examples/jsm/postprocessing/SMAAPass.js'
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
 import Stats from "stats.js";
-import {particlesMaterial, triangleMaterial, textMaterial, particlesParams, overlayMaterial } from "./materials.js";
-
+import {particlesMaterial, triangleMaterial, textMaterial, particlesParams, overlayMaterial, xMarkMaterial } from "./materials.js";
+import {toggleButtonState} from "./button.js";
 let state = false;
 const stats = new Stats();
 const animationDuration = 1;
-
+let sceneReady = false;
 
 const loadingBarElement = document.querySelector('.loadingBar')
+let isAnimationDisabled = false;
+
 
 const LoadingManager = new THREE.LoadingManager(
     () => {
         window.setTimeout(() => {
             addObjectsToScene()
+            sceneReady = true
         }, 1500)
         window.setTimeout(() => {
             gsap.to(overlayMaterial.uniforms.uAlpha, {
@@ -76,6 +79,8 @@ scene.add(overlay)
 overlay.rotation.x = Math.PI / 2
 overlay.position.set(0, 2, 0)
  
+
+
 // !
 
 /**
@@ -109,6 +114,21 @@ const camera = new THREE.PerspectiveCamera(50, sizes.width / sizes.height, 0.1, 
 camera.position.set(...Object.values(initialState.camera.position))
 scene.add(camera)
 camera.lookAt(0, 0, 0)
+
+// ! XMark
+
+const xMarkGeometry = new THREE.PlaneGeometry(0.05, 0.05, 1, 1);
+
+const xMark = new THREE.Mesh(xMarkGeometry, xMarkMaterial);
+
+xMark.position.y = 0.6
+
+xMark.position.z = -1;
+// xMark.rotation.z = Math.PI / 4 
+camera.add(xMark)
+
+// xMark.rotation.z = Math.PI / 4
+// overlay.position.set(0, 2, 0)
  
 
 // Controls
@@ -225,6 +245,7 @@ const bloomParams = {
 };
 
 let composer;
+let bloomPass;
 function applyPostProcessing() {
 
   const renderTarget = new THREE.WebGLRenderTarget(
@@ -237,7 +258,7 @@ function applyPostProcessing() {
   
   const renderPass = new RenderPass( scene, camera );
   
-  const bloomPass = new UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 0, 0, 0 );
+   bloomPass = new UnrealBloomPass( new THREE.Vector2( window.innerWidth, window.innerHeight ), 0, 0, 0 );
   bloomPass.threshold = bloomParams.threshold;
   bloomPass.strength = bloomParams.strength;
   bloomPass.radius = bloomParams.radius;
@@ -302,15 +323,16 @@ gui.add(overlay.position, 'z').min(-10).max(10).step(0.01)
 
 				} );
 
-        const o = {
-          listener: buttonListener
-        }
-        gui.add(o, 'listener').name('trigger')
+        // const o = {
+        //   listener: buttonListener
+        // }
+        // gui.add(o, 'listener').name('trigger')
 }
 
 // Text creation
 
 let text;
+let textBackground;
 const createText = (text1, font, x = 0, y = 0, z = 0, rotate) => {
   const textGeometry = new TextGeometry(text1, {
     font: font,
@@ -343,7 +365,19 @@ fontLoader.load("/fonts/titillium_bold.typeface.json", (font) => {
     z: 0,
   });
   
-  text.position.z = -2.5; 
+  textBackground = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.5, 0.5),
+    new THREE.MeshBasicMaterial({
+      // color: 0xffffff,
+      opacity: 0.0,
+      transparent: true
+    })
+    
+  )
+  
+  text.add(textBackground)
+  textBackground.position.z = -0.1;
+  text.position.z = 4; 
 })
 
 
@@ -352,6 +386,44 @@ fontLoader.load("/fonts/titillium_bold.typeface.json", (font) => {
  */
 
 const clock = new THREE.Clock()
+
+const raycaster = new THREE.Raycaster();
+
+const mouse = new THREE.Vector2()
+
+window.addEventListener('mousemove', (event) => {
+    mouse.x = (event.clientX / sizes.width) * 2 - 1
+    mouse.y = - (event.clientY / sizes.height) * 2 + 1
+})
+
+window.addEventListener('click', () => {
+    if(currentIntersect) {
+        console.log('click')
+        console.log(currentIntersect.object === text || currentIntersect.object === textBackground);
+        if((currentIntersect.object === text || 
+          currentIntersect.object === textBackground || 
+          currentIntersect.object === xMark) &&
+          !isAnimationDisabled
+          ) {
+            isAnimationDisabled = true;
+          
+            window.setTimeout(() => {
+              isAnimationDisabled = false
+            }, animationDuration * 1000);
+
+          state = !state;
+          toggleButtonState(state);
+
+          if(!state) {
+            ACTION_SHOWSTART();
+          } else {
+            ACTION_SHOWINFO()
+          }
+        }
+    }
+})
+
+let currentIntersect = null;
 
 const tick = () =>
 {
@@ -368,6 +440,88 @@ const tick = () =>
      
     if(textMaterial){
       textMaterial.uniforms.uTime.value = elapsedTime;
+    }
+    const objectsToTest = [text, xMark];
+
+    if(sceneReady) {
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(objectsToTest, true);
+
+      // for (const testMesh of objectsToTest)
+      // {
+      //     if(testMesh !== currentIntersect) {
+      //       if(testMesh instanceof THREE.Group)
+      //       {
+      //         triangleMaterial.wireframe = false
+      //       } else {
+      //         textMaterial.wireframe = false
+      //       }
+      //     }
+      // }
+      // for (const intersect of intersects)
+      // {
+      //     if(intersect.object.parent instanceof THREE.Group)
+      //       {
+      //         triangleMaterial.wireframe = true
+      //       } else {
+      //         textMaterial.wireframe = true
+      //       }
+      // }
+
+
+      if(intersects.length > 0)
+      {
+          if(!currentIntersect) {
+              console.log("mouse enter");
+              for (const testMesh of objectsToTest)
+              {
+                  if(testMesh !== currentIntersect) {
+                    if(testMesh instanceof THREE.Group)
+                    {
+                      // plusOpacityToRectangles()
+                      // triangleMaterial.wireframe = false
+                    } else {
+                      plusOpacityToText();
+                      // textMaterial.wireframe = false
+                    }
+                  }
+              }
+              for (const intersect of intersects)
+              {
+                  if(intersect.object.parent instanceof THREE.Group)
+                    {
+                      // minusOpacityToRectangles();
+                      // triangleMaterial.wireframe = true
+                    } else {
+                      minusOpacityToText();
+                      // textMaterial.wireframe = true
+                    }
+              }
+          }
+        
+
+        // console.log(intersects[0].object.parent instanceof THREE.Group)
+        currentIntersect = intersects[0];
+    } else {
+
+        if(currentIntersect) {
+            console.log("mouse leave");
+            for (const testMesh of objectsToTest)
+              {
+                
+                    if(testMesh instanceof THREE.Group)
+                    {
+                      plusOpacityToRectangles()
+                      // triangleMaterial.wireframe = false
+                    } else {
+                      plusOpacityToText();
+                      // textMaterial.wireframe = false
+                    }
+                
+              }
+        }
+        currentIntersect = null;
+    }
     }
     
     // Update controls
@@ -388,14 +542,14 @@ tick()
 
 
 
-function buttonListener(buttonState) {
-    if(buttonState) {
-      ACTION_SHOWSTART();
-    } else {
-        ACTION_SHOWINFO()
-    }
-    state = !state
-}
+// function buttonListener(buttonState) {
+//     if(buttonState) {
+//       ACTION_SHOWSTART();
+//     } else {
+//         ACTION_SHOWINFO()
+//     }
+//     state = !state
+// }
 
 function ACTION_SHOWINFO  () {
   moveCameraWaves();
@@ -408,6 +562,8 @@ function ACTION_SHOWINFO  () {
     hideRectangles()
  
     hideText();
+
+    showXmark()
 }
 
 function ACTION_SHOWSTART  () {
@@ -420,7 +576,7 @@ function ACTION_SHOWSTART  () {
   });
 
   showText();
-
+  hideXmark()
   camera.add(group);
 }
 
@@ -513,5 +669,99 @@ function moveCameraDefault() {
 }
 
 
-export {buttonListener}
+function minusOpacityToText() {
+  // gsap.to(textMaterial.uniforms.uOpacity, {
+  //   duration: animationDuration / 4,
+  //   value: 0.5,
+  // })
+  const scale = 0.9;
+  gsap.to(text.scale, {
+    duration: animationDuration / 4,
+    x: scale,
+    y: scale,
+    z: scale,
+  })
+}
+
+function plusOpacityToText() {
+  // gsap.to(textMaterial.uniforms.uOpacity, {
+  //   duration: animationDuration / 4,
+  //   value: 1,
+  // })
+  gsap.to(text.scale, {
+    duration: animationDuration / 4,
+    x: 1,
+    y: 1,
+    z: 1,
+  })
+}
+
+function minusOpacityToRectangles() {
+  gsap.to(triangleMaterial.uniforms.uOpacityMultiplier, {
+    duration: animationDuration / 4,
+    value: 0.5,
+  })
+
+  // arrayWithRectangles.forEach(element => {
+  //   gsap.to(element.position, {
+  //       duration: animationDuration / 4,
+  //       x: element.position.x * 1.2,
+  //       z: element.position.z * 1.2,
+  //     })
+  // })
+}
+
+function plusOpacityToRectangles() {
+  gsap.to(triangleMaterial.uniforms.uOpacityMultiplier, {
+    duration: animationDuration / 4,
+    value: 1,
+  })
+
+  // arrayWithRectangles.forEach(element => {
+  //   gsap.to(element.position, {
+  //       duration: animationDuration / 4,
+  //       x: element.position.x / 1.2,
+  //       z: element.position.z / 1.2,
+  //     })
+  // })
+}
+
+function hideXmark() {
+  gsap.to(xMarkMaterial.uniforms.uAlpha, {
+    duration: animationDuration,
+    value: 0,
+  })
+
+  gsap.to(xMark.position, {
+    duration: animationDuration,
+    y: 0.5,
+  })
+
+  gsap.to(xMark.rotation, {
+    duration: animationDuration,
+    z: 0 ,
+  })
+}
+
+function showXmark() {
+  gsap.to(xMarkMaterial.uniforms.uAlpha, {
+    duration: animationDuration,
+    value: 1,
+  })
+  gsap.to(xMark.position, {
+    duration: animationDuration,
+    y: 0.4,
+  })
+
+  gsap.to(xMark.rotation, {
+   
+    duration: animationDuration,
+    z: Math.PI / 4 * 5,
+    ease: "easeInOut",
+  })
+}
+
+// xMark.position.y = 0.4
+// xMark.rotation.y = Math.PI 
+// export {buttonListener}
 

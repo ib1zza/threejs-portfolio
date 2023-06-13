@@ -24,8 +24,30 @@ body
     outline: none;
 }
 
-button {
+.openButton {
     display: block;
+    opacity: 0;
+   position: absolute;
+   top: 0;
+   right: 0;
+   bottom: 0;
+   left: 0;
+   cursor: pointer;
+}
+
+.openButton.disabled {
+    display: none;
+    pointer-events: none;
+}
+
+
+button {
+    border: none;
+    background-color: transparent;
+    pointer-events: none !important;
+
+}
+/*  display: block;
     cursor: pointer;
     z-index: 10;
     font-family: 'Montserrat', sans-serif;
@@ -36,48 +58,49 @@ button {
     border: none;
     color: transparent;
     transition: all 0.2s ease-in-out;
-}
-
-
-.button__invisible {
-    opacity: 0;
-    color: transparent;
     position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
- 
-}
+     */
 
-.xmark {
+
+.closeButton {
+    cursor: pointer;
+    z-index: 10;
     position: absolute;
     top: 50px;
+    padding: 20px;
     opacity: 1;
     pointer-events: all;
     color: #fff;
-}
-
-.button svg {
-    height: 40px;
+    background-color: transparent;
+    transform: translateY(0);
     transition: all 0.5s ease-in-out;
  
+
+}
+
+.closeButton.disabled {
+    pointer-events: none;
+    transform: translateY(-50px) !important;
+}
+
+
+.closeButton svg {
+    height: 40px;
+    transition: all 0.5s ease-in-out;
 }
 
 .icon_invisible {
-    
     opacity: 0;
-    transform: rotate(-0.5turn);
+    transform: rotate(0.5turn);
 }
 
 .icon_visible {
-   
     opacity: 1;
-    transform: rotate(0turn);
+    transform: rotate(0);
 }
 
-.xmark:hover .icon_visible {
-    transform:  rotate(0.5turn);
+.closeButton:hover .icon_visible {
+    transform:  rotate(-0.5turn);
 }
 
 /* ! */
