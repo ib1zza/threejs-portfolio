@@ -11,7 +11,8 @@ export const particlesParams = {
 export const particlesMaterial = new THREE.ShaderMaterial({
     depthWrite: false,
     
-    vertexColors: true,
+    blending: THREE.AdditiveBlending,
+    // vertexColors: true,
     vertexShader: waterParticlesVertexShader,
     fragmentShader: waterParticlesFragmentShader,
     uniforms: {
