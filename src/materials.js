@@ -4,10 +4,8 @@ import waterParticlesFragmentShader from './shaders/coolWavesParticles/fragment.
 
 export const particlesParams = {
     count: 200,
-    size: 5
+    size: 8
 }
- 
-
 
 export const particlesMaterial = new THREE.ShaderMaterial({
     depthWrite: false,

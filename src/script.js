@@ -287,20 +287,24 @@ stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
 document.body.appendChild( stats.dom );
 
     const gui = new dat.GUI();
-    
-    gui.add(particlesMaterial.uniforms.uSize, 'value').min(0).max(10).step(0.001).name('point size')
-    gui.add(particlesMaterial.uniforms.uColorOffset, 'value').min(0).max(1).step(0.001).name('color offset')
-    gui.add(particlesMaterial.uniforms.uColorMultiplier, 'value').min(0).max(10).step(0.001).name('color multiplier')
+    const particlesFolder = gui.addFolder( 'particles' );
 
-    gui.add(particlesMaterial.uniforms.uSmallWavesElevation, 'value').min(0).max(10).step(0.001).name('small waves elevation')
-    gui.add(particlesMaterial.uniforms.uSmallWavesFrequency, 'value').min(0).max(10).step(0.001).name('small waves frequency')
-    gui.add(particlesMaterial.uniforms.uSmallWavesSpeed, 'value').min(0).max(10).step(0.001).name('small waves speed')
-    gui.add(particlesMaterial.uniforms.uSmallWavesIterations, 'value').min(0).max(10).step(0.001).name('small waves iterations')
+    particlesFolder.add(particlesMaterial.uniforms.uSize, 'value').min(0).max(40).step(0.001).name('point size')
+    particlesFolder.add(particlesMaterial.uniforms.uColorOffset, 'value').min(0).max(1).step(0.001).name('color offset')
+    particlesFolder.add(particlesMaterial.uniforms.uColorMultiplier, 'value').min(0).max(10).step(0.001).name('color multiplier')
+    particlesFolder.add(particlesMaterial.uniforms.uSmallWavesElevation, 'value').min(0).max(10).step(0.001).name('waves elevation')
+    particlesFolder.add(particlesMaterial.uniforms.uSmallWavesFrequency, 'value').min(0).max(10).step(0.001).name('waves frequency')
+    particlesFolder.add(particlesMaterial.uniforms.uSmallWavesSpeed, 'value').min(0).max(10).step(0.001).name('waves speed')
+    particlesFolder.add(particlesMaterial.uniforms.uSmallWavesIterations, 'value').min(0).max(10).step(0.001).name('waves iterations')
 
+    particlesFolder.addColor(particlesMaterial.uniforms.uDepthColor, 'value').name('depth color')
+    particlesFolder.addColor(particlesMaterial.uniforms.uSurfaceColor, 'value').name('surface color')
 
-    gui.add(overlay.position, 'x').min(-10).max(10).step(0.01)
-gui.add(overlay.position, 'y').min(-10).max(10).step(0.01)
-gui.add(overlay.position, 'z').min(-10).max(10).step(0.01)
+    const cameraFolder = gui.addFolder( 'camera' );
+
+    cameraFolder.add(camera.position, 'x').min(-10).max(10).step(0.01).name('camera x')
+    cameraFolder.add(camera.position, 'y').min(-10).max(10).step(0.01).name('camera y')
+    cameraFolder.add(camera.position, 'z').min(-10).max(10).step(0.01).name('camera z')
 
 
     const bloomFolder = gui.addFolder( 'bloom' );
@@ -317,7 +321,7 @@ gui.add(overlay.position, 'z').min(-10).max(10).step(0.01)
 
 				} );
 
-				gui.add( bloomParams, 'radius', 0.0, 1.0 ).step( 0.01 ).onChange( function ( value ) {
+				bloomFolder.add( bloomParams, 'radius', 0.0, 1.0 ).step( 0.01 ).onChange( function ( value ) {
 
 					bloomPass.radius = Number( value );
 
