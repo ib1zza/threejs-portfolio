@@ -3,8 +3,9 @@ import waterParticlesVertexShader from './shaders/coolWavesParticles/vertex.glsl
 import waterParticlesFragmentShader from './shaders/coolWavesParticles/fragment.glsl';
 
 export const particlesParams = {
-    count: 200,
-    size: 8
+    count: 400,
+    size: 8,
+    sizeOfPlane: 20,
 }
 
 export const particlesMaterial = new THREE.ShaderMaterial({

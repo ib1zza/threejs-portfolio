@@ -127,13 +127,13 @@ button {
 }
 
 .main_visible{
-    top: 400px;
+    top: 200px;
     opacity: 1;
 }
 
 @media screen and (max-width: 600px) {
     .main_visible{
-        top: 200px;
+        top: 100px;
     }
 }
 

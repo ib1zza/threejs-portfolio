@@ -110,7 +110,7 @@ window.addEventListener('resize', () =>
  * Camera
  */
 // Base camera
-const camera = new THREE.PerspectiveCamera(50, sizes.width / sizes.height, 0.1, 10)
+const camera = new THREE.PerspectiveCamera(50, sizes.width / sizes.height, 0.1, 20)
 camera.position.set(...Object.values(initialState.camera.position))
 scene.add(camera)
 camera.lookAt(0, 0, 0)
@@ -161,9 +161,9 @@ const createPoints = () => {
     
     for ( let i = 0; i < particlesParams.count; i ++ ) {
         for ( let j = 0; j < particlesParams.count; j ++ ) {
-            const x = ((i) / particlesParams.count - 0.5)  * 10;
+            const x = ((i) / particlesParams.count - 0.5)  * particlesParams.sizeOfPlane;
             const y = 0;
-            const z =  ((j) / particlesParams.count - 0.5)  * 10;
+            const z =  ((j) / particlesParams.count - 0.5)  * particlesParams.sizeOfPlane;
             vertices.push( x, y, z );
         }
     }
@@ -515,7 +515,7 @@ const tick = () =>
                 
                     if(testMesh instanceof THREE.Group)
                     {
-                      plusOpacityToRectangles()
+                      // plusOpacityToRectangles()
                       // triangleMaterial.wireframe = false
                     } else {
                       plusOpacityToText();
@@ -652,9 +652,9 @@ function moveCameraWaves() {
 
   gsap.to(camera.rotation, {
     duration: animationDuration,
-    x: -2.1,
+    // x: -2.1,
     y: -Math.PI / 2,
-    z: -2.1,
+    // z: -2.1,
   }) 
 }
 
